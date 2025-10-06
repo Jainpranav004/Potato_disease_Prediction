@@ -1,0 +1,30 @@
+@app.post("/predict")
+async def predict(
+    file : UploadFile = File(...)
+):
+    
+    image = read_file_as_image(await file.read())
+ 
+    # The image is a 3D array (height, width, channels).
+    # We expand dimensions to create a batch of size 1 (1, height, width, channels).
+    image_batch = np.expand_dims(image, 0)
+
+    # 1. Get the raw prediction (an array of probabilities)
+    predictions = MODEL.predict(image_batch)
+    
+    # 2. Find the index of the highest probability
+    # predictions[0] is the probability array for the single image in the batch
+    predicted_class_index = np.argmax(predictions[0]) 
+    
+    # 3. Use the index to get the class name
+    predicted_class = CLASS_NAMES[predicted_class_index]
+    
+    # 4. Get the confidence value
+    confidence = np.max(predictions[0])
+    
+    # 5. Return the result as a dictionary (FastAPI converts this to JSON)
+    return {
+        'class': predicted_class,
+        # Convert NumPy float to standard Python float for proper JSON serialization
+        'confidence': float(confidence) 
+    }
